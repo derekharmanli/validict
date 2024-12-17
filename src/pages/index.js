@@ -6,7 +6,7 @@ import {
   TabsTrigger,
 } from "../components/ui/tabs";
 import SearchHeader from "../components/search-header";
-import WordBank from "../components/word-bank";
+import WordList from "../components/word-list";
 import DictionaryBrowser from "../components/dictionary-browser";
 import ConceptBrowser from "../components/concept-browser";
 
@@ -14,7 +14,7 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Word Bank</title>
+        <title>Validict</title>
         <meta
           name="description"
           content="Personal dictionary and word learning app"
@@ -30,7 +30,7 @@ export default function Home() {
           <div className="grid gap-6 lg:grid-cols-12 mt-6">
             {/* Main Word Bank */}
             <div className="lg:col-span-8 space-y-6">
-              <WordBank />
+              <WordList />
             </div>
 
             {/* Sidebar Tools */}
