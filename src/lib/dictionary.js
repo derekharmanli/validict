@@ -9,7 +9,6 @@ export async function searchDictionary(word) {
     }
 
     const data = await response.json();
-
     return data.map((entry) => ({
       word: entry.word,
       definition: entry.meanings[0]?.definitions[0]?.definition || "",
@@ -23,22 +22,22 @@ export async function searchDictionary(word) {
   }
 }
 
+// Get a list of words starting with a letter
 export async function browseWords(letter) {
   try {
-    const response = await fetch(
-      `https://api.datamuse.com/words?sp=${letter}*&max=20&md=d`
+    // Use a predefined word list for each letter
+    const response = await fetch(`/api/words/${letter}`);
+    if (!response.ok) {
+      throw new Error("Failed to fetch words");
+    }
+    const words = await response.json();
+
+    // Get detailed info for first 10 words
+    const detailedWords = await Promise.all(
+      words.slice(0, 10).map((word) => searchDictionary(word))
     );
-    const data = await response.json();
-    return data
-      .filter((word) => word.defs)
-      .map((word) => {
-        const [partOfSpeech, definition] = word.defs[0].split("\t");
-        return {
-          word: word.word,
-          definition,
-          partOfSpeech,
-        };
-      });
+
+    return detailedWords;
   } catch (error) {
     console.error("Browse API Error:", error);
     throw error;

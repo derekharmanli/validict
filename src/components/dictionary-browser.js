@@ -7,56 +7,31 @@ import { Loader2 } from "lucide-react";
 import { useToast } from "./ui/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import WordCard from "./word-card";
+import { browseWords, searchDictionary } from "../lib/dictionary";
 
 export default function DictionaryBrowser({ searchTerm }) {
   const [words, setWords] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [currentLetter, setCurrentLetter] = useState("a");
   const [selectedWord, setSelectedWord] = useState(null);
   const [showFullCard, setShowFullCard] = useState(false);
-  const [currentLetter, setCurrentLetter] = useState("a");
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [lastWord, setLastWord] = useState("");
   const observerTarget = useRef(null);
-  const longPressTimer = useRef(null);
   const { toast } = useToast();
   const addWord = useWordStore((state) => state.addWord);
   const savedWords = useWordStore((state) => state.words);
 
-  // Initial load
-  useEffect(() => {
-    fetchWords();
-  }, []);
-
-  // Infinite scroll
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !loadingMore && !searchTerm) {
-          loadMoreWords();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
-    }
-
-    return () => observer.disconnect();
-  }, [loadingMore, searchTerm]);
-
-  const fetchWords = async () => {
+  const fetchWords = async (letter) => {
     setLoading(true);
     try {
-      const response = await fetch(
-        `https://api.datamuse.com/words?sp=${currentLetter}*&md=d&max=100`
-      );
-      const data = await response.json();
-      const filteredData = data.filter((word) => word.defs?.length > 0);
-      setWords(filteredData);
+      const data = await browseWords(letter);
+      setWords(data);
+      setLastWord(data[data.length - 1]?.word || "");
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to load dictionary",
+        description: "Failed to load dictionary words",
         variant: "destructive",
       });
     } finally {
@@ -64,21 +39,40 @@ export default function DictionaryBrowser({ searchTerm }) {
     }
   };
 
+  useEffect(() => {
+    if (!searchTerm) {
+      fetchWords(currentLetter);
+    }
+  }, [currentLetter, searchTerm]);
+
+  // Search functionality
+  useEffect(() => {
+    if (!searchTerm) return;
+
+    const searchWord = async () => {
+      setLoading(true);
+      try {
+        const results = await searchDictionary(searchTerm);
+        setWords(results);
+      } catch (error) {
+        setWords([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const timer = setTimeout(searchWord, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   const loadMoreWords = async () => {
-    if (loadingMore) return;
+    if (loadingMore || !lastWord) return;
 
     setLoadingMore(true);
-    const nextLetter = String.fromCharCode(currentLetter.charCodeAt(0) + 1);
-
     try {
-      const response = await fetch(
-        `https://api.datamuse.com/words?sp=${nextLetter}*&md=d&max=100`
-      );
-      const data = await response.json();
-      const filteredData = data.filter((word) => word.defs?.length > 0);
-
-      setWords((prev) => [...prev, ...filteredData]);
-      setCurrentLetter(nextLetter);
+      const newWords = await browseWords(lastWord, 20);
+      setWords((prev) => [...prev, ...newWords]);
+      setLastWord(newWords[newWords.length - 1]?.word || "");
     } catch (error) {
       toast({
         title: "Error",
@@ -87,40 +81,6 @@ export default function DictionaryBrowser({ searchTerm }) {
       });
     } finally {
       setLoadingMore(false);
-    }
-  };
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (searchTerm) {
-        searchWords(searchTerm);
-      }
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
-  const searchWords = async (term) => {
-    if (!term) {
-      fetchWords();
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await fetch(
-        `https://api.datamuse.com/words?sp=${term}*&md=d&max=50`
-      );
-      const data = await response.json();
-      setWords(data.filter((word) => word.defs?.length > 0));
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to search dictionary",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
     }
   };
 
