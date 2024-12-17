@@ -1,10 +1,10 @@
 import { Search } from "lucide-react";
-import { Input } from "./components/ui/input";
-import { Button } from "./components/ui/button";
+import { Input } from "../components/ui/input";
+import { Button } from "../components/ui/button";
 import { useState } from "react";
 import { useWordStore } from "../lib/store";
 import { searchDictionary } from "../lib/dictionary";
-import { useToast } from "./components/ui/use-toast";
+import { useToast } from "../components/ui/use-toast";
 
 export default function SearchHeader() {
   const [query, setQuery] = useState("");

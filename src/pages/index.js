@@ -1,9 +1,9 @@
 import Head from "next/head";
-import SearchHeader from "@/components/search-header";
-import WordList from "@/components/word-list";
-import Recommendations from "@/components/recommendations";
-import DictionaryBrowser from "@/components/dictionary-browser";
-import ConceptBrowser from "@/components/concept-browser";
+import SearchHeader from "../components/search-header";
+import WordList from "../components/word-list";
+import Recommendations from "../components/recommendations";
+import DictionaryBrowser from "../components/dictionary-browser";
+import ConceptBrowser from "../components/concept-browser";
 
 export default function Home() {
   return (
