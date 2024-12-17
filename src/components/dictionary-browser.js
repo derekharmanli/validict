@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { useToast } from "./ui/use-toast";
-import { useWordStore } from "@/lib/store";
+import { useWordStore } from "../lib/store";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { browseWords } from "@/lib/dictionary";
+import { browseWords } from "../lib/dictionary";
 
 export default function DictionaryBrowser() {
   const [currentLetter, setCurrentLetter] = useState("a");

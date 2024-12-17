@@ -1,4 +1,4 @@
-import { useWordStore } from "@/lib/store";
+import { useWordStore } from "../lib/store";
 import WordCard from "./word-card";
 import { Card, CardContent } from "./ui/card";
 

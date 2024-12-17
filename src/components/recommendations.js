@@ -1,10 +1,10 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { useWordStore } from "@/lib/store";
+import { useWordStore } from "../lib/store";
 import { Button } from "./ui/button";
 import { Plus } from "lucide-react";
-import { searchDictionary } from "@/lib/dictionary";
+import { searchDictionary } from "../lib/dictionary";
 import { useToast } from "./ui/use-toast";
 
 export default function Recommendations() {

@@ -4,7 +4,7 @@ import { Button } from "./ui/button";
 import { Trash2, Tag, Clock, ExternalLink } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { formatDistanceToNow } from "date-fns";
-import { useWordStore } from "@/lib/store";
+import { useWordStore } from "../lib/store";
 import {
   Dialog,
   DialogContent,
