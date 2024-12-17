@@ -1,6 +1,9 @@
-import { useState, useEffect, createContext, useContext } from "react";
+import { useState, createContext, useContext } from "react";
 
-const ToastContext = createContext({});
+const ToastContext = createContext({
+  toast: () => {},
+  toasts: [],
+});
 
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
@@ -19,23 +22,29 @@ export const ToastProvider = ({ children }) => {
     }, duration);
   };
 
+  const value = {
+    toast,
+    toasts,
+  };
+
   return (
-    <ToastContext.Provider value={{ toast }}>
+    <ToastContext.Provider value={value}>
       {children}
       <div className="fixed bottom-0 right-0 p-4 space-y-2 z-50">
-        {toasts.map((t) => (
-          <div
-            key={t.id}
-            className={`p-4 rounded-md shadow-lg ${
-              t.variant === "destructive"
-                ? "bg-destructive text-destructive-foreground"
-                : "bg-background"
-            }`}
-          >
-            {t.title && <div className="font-semibold">{t.title}</div>}
-            {t.description && <div className="text-sm">{t.description}</div>}
-          </div>
-        ))}
+        {Array.isArray(toasts) &&
+          toasts.map((t) => (
+            <div
+              key={t.id}
+              className={`p-4 rounded-md shadow-lg ${
+                t.variant === "destructive"
+                  ? "bg-destructive text-destructive-foreground"
+                  : "bg-background"
+              }`}
+            >
+              {t.title && <div className="font-semibold">{t.title}</div>}
+              {t.description && <div className="text-sm">{t.description}</div>}
+            </div>
+          ))}
       </div>
     </ToastContext.Provider>
   );

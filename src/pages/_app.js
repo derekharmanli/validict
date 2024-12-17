@@ -1,5 +1,5 @@
 import { ThemeProvider } from "next-themes";
-import { Toaster } from "../components/ui/toaster";
+import { ToastProvider } from "../components/ui/use-toast";
 import "../styles/globals.css";
 
 export default function App({ Component, pageProps }) {
@@ -10,8 +10,9 @@ export default function App({ Component, pageProps }) {
       enableSystem
       disableTransitionOnChange
     >
-      <Component {...pageProps} />
-      <Toaster />
+      <ToastProvider>
+        <Component {...pageProps} />
+      </ToastProvider>
     </ThemeProvider>
   );
 }
