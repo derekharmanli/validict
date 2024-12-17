@@ -12,26 +12,50 @@ import { browseWords, searchDictionary } from "../lib/dictionary";
 export default function DictionaryBrowser({ searchTerm }) {
   const [words, setWords] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [currentLetter, setCurrentLetter] = useState("a");
   const [selectedWord, setSelectedWord] = useState(null);
   const [showFullCard, setShowFullCard] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [lastWord, setLastWord] = useState("");
   const observerTarget = useRef(null);
+  const longPressTimer = useRef(null);
   const { toast } = useToast();
   const addWord = useWordStore((state) => state.addWord);
   const savedWords = useWordStore((state) => state.words);
 
-  const fetchWords = async (letter) => {
+  // Initial load
+  useEffect(() => {
+    if (!searchTerm) {
+      loadInitialWords();
+    }
+  }, []);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loadingMore && !searchTerm) {
+          loadMoreWords();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => observer.disconnect();
+  }, [loadingMore, searchTerm, lastWord]);
+
+  const loadInitialWords = async () => {
     setLoading(true);
     try {
-      const data = await browseWords(letter);
+      const data = await browseWords("", 20);
       setWords(data);
       setLastWord(data[data.length - 1]?.word || "");
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to load dictionary words",
+        description: "Failed to load dictionary",
         variant: "destructive",
       });
     } finally {
@@ -39,17 +63,34 @@ export default function DictionaryBrowser({ searchTerm }) {
     }
   };
 
+  const loadMoreWords = async () => {
+    if (loadingMore || !lastWord) return;
+    setLoadingMore(true);
+
+    try {
+      const newWords = await browseWords(lastWord, 20);
+      if (newWords.length > 0) {
+        setWords((prev) => [...prev, ...newWords]);
+        setLastWord(newWords[newWords.length - 1].word);
+      }
+    } catch (error) {
+      toast({
+        description: "Failed to load more words",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  // Search handling
   useEffect(() => {
     if (!searchTerm) {
-      fetchWords(currentLetter);
+      loadInitialWords();
+      return;
     }
-  }, [currentLetter, searchTerm]);
 
-  // Search functionality
-  useEffect(() => {
-    if (!searchTerm) return;
-
-    const searchWord = async () => {
+    const searchTimeout = setTimeout(async () => {
       setLoading(true);
       try {
         const results = await searchDictionary(searchTerm);
@@ -59,30 +100,10 @@ export default function DictionaryBrowser({ searchTerm }) {
       } finally {
         setLoading(false);
       }
-    };
+    }, 300);
 
-    const timer = setTimeout(searchWord, 300);
-    return () => clearTimeout(timer);
+    return () => clearTimeout(searchTimeout);
   }, [searchTerm]);
-
-  const loadMoreWords = async () => {
-    if (loadingMore || !lastWord) return;
-
-    setLoadingMore(true);
-    try {
-      const newWords = await browseWords(lastWord, 20);
-      setWords((prev) => [...prev, ...newWords]);
-      setLastWord(newWords[newWords.length - 1]?.word || "");
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load more words",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingMore(false);
-    }
-  };
 
   const handleWordClick = (word) => {
     if (selectedWord?.word === word.word) {
@@ -95,11 +116,13 @@ export default function DictionaryBrowser({ searchTerm }) {
 
   const handleWordMouseDown = (word) => {
     longPressTimer.current = setTimeout(() => {
-      const [partOfSpeech, definition] = word.defs[0].split("\t");
       addWord({
         word: word.word,
-        definition: definition,
-        partOfSpeech: partOfSpeech,
+        definition: word.definition,
+        partOfSpeech: word.partOfSpeech,
+        examples: word.examples,
+        pronunciation: word.pronunciation,
+        dateAdded: new Date().toISOString(),
       });
       toast({
         description: `"${word.word}" has been added to your word bank`,
@@ -133,21 +156,12 @@ export default function DictionaryBrowser({ searchTerm }) {
               setShowFullCard(false);
               setSelectedWord(null);
             }}
-            onLongPress={() => {
-              const [partOfSpeech, definition] =
-                selectedWord.defs[0].split("\t");
-              addWord({
-                word: selectedWord.word,
-                definition: definition,
-                partOfSpeech: partOfSpeech,
-              });
-            }}
+            inDictionary={true}
           />
         ) : (
           <div className="max-h-[600px] overflow-y-auto space-y-2 pr-2">
             <AnimatePresence>
               {words.map((word) => {
-                const [partOfSpeech, definition] = word.defs[0].split("\t");
                 const isSelected = selectedWord?.word === word.word;
                 const isSaved = savedWords.some(
                   (saved) => saved.word === word.word
@@ -180,7 +194,7 @@ export default function DictionaryBrowser({ searchTerm }) {
                         <div className="flex items-baseline gap-2">
                           <h3 className="font-medium truncate">{word.word}</h3>
                           <span className="text-xs text-muted-foreground shrink-0">
-                            {partOfSpeech}
+                            {word.partOfSpeech}
                           </span>
                         </div>
 
@@ -193,7 +207,7 @@ export default function DictionaryBrowser({ searchTerm }) {
                               className="mt-2 space-y-2"
                             >
                               <p className="text-sm text-muted-foreground">
-                                {definition}
+                                {word.definition}
                               </p>
                               <p className="text-sm text-primary font-medium">
                                 Click again to view full details, or hold to add
@@ -209,7 +223,6 @@ export default function DictionaryBrowser({ searchTerm }) {
               })}
             </AnimatePresence>
 
-            {/* Infinite scroll trigger */}
             {!searchTerm && (
               <div
                 ref={observerTarget}
