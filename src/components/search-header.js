@@ -1,61 +1,76 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
-import { Input } from "../components/ui/input";
-import { Button } from "../components/ui/button";
-import { useState } from "react";
-import { useWordStore } from "../lib/store";
-import { searchDictionary } from "../lib/dictionary";
-import { useToast } from "../components/ui/use-toast";
+import { Input } from "./ui/input";
+import { Button } from "./ui/button";
+import { useWordStore } from "@/lib/store";
+import { searchDictionary } from "@/lib/dictionary";
+import debounce from "lodash/debounce";
 
 export default function SearchHeader() {
   const [query, setQuery] = useState("");
-  const { toast } = useToast();
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
   const addWord = useWordStore((state) => state.addWord);
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!query.trim()) return;
-
-    try {
-      const results = await searchDictionary(query);
-      if (results.length > 0) {
-        addWord(results[0]);
-        toast({
-          title: "Word found",
-          description: `"${results[0].word}" has been added to your word bank.`,
-        });
-        setQuery("");
-      } else {
-        toast({
-          title: "No results",
-          description: "No definition found for this word.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to search the dictionary.",
-        variant: "destructive",
-      });
+  const debouncedSearch = debounce(async (searchTerm) => {
+    if (!searchTerm.trim()) {
+      setResults([]);
+      return;
     }
-  };
+
+    setLoading(true);
+    try {
+      const searchResults = await searchDictionary(searchTerm);
+      setResults(searchResults);
+    } catch (error) {
+      console.error("Search error:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, 300);
+
+  useEffect(() => {
+    debouncedSearch(query);
+    return () => debouncedSearch.cancel();
+  }, [query]);
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-3xl font-bold tracking-tight">Word Bank</h1>
-      <form onSubmit={handleSearch} className="flex gap-2">
+    <div className="sticky top-0 bg-background z-10 pb-4">
+      <div className="relative">
         <Input
           type="search"
           placeholder="Search for a word..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="max-w-lg"
+          className="w-full"
         />
-        <Button type="submit">
-          <Search className="h-4 w-4 mr-2" />
-          Search
-        </Button>
-      </form>
+        {results.length > 0 && query && (
+          <div className="absolute top-full left-0 right-0 mt-1 bg-background border rounded-md shadow-lg max-h-64 overflow-auto">
+            {results.map((result) => (
+              <Button
+                key={result.word}
+                variant="ghost"
+                onClick={() => {
+                  addWord(result);
+                  setQuery("");
+                  setResults([]);
+                }}
+                className="w-full px-4 py-2 text-left hover:bg-accent flex justify-between items-center"
+              >
+                <div>
+                  <div className="font-medium">{result.word}</div>
+                  <div className="text-sm text-muted-foreground truncate">
+                    {result.definition}
+                  </div>
+                </div>
+                <Search className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
