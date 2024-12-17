@@ -1,28 +1,37 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Button } from "./ui/button";
-import { useToast } from "./ui/use-toast";
-import { useWordStore } from "../lib/store";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { browseWords } from "../lib/dictionary";
+"use client";
 
-export default function DictionaryBrowser() {
-  const [currentLetter, setCurrentLetter] = useState("a");
+import { useEffect, useState, useRef } from "react";
+import { Card, CardContent } from "./ui/card";
+import { useWordStore } from "../lib/store";
+import { Loader2 } from "lucide-react";
+import { useToast } from "./ui/use-toast";
+import { motion, AnimatePresence } from "framer-motion";
+import WordCard from "./word-card";
+import { browseWords, searchDictionary } from "../lib/dictionary";
+
+export default function DictionaryBrowser({ searchTerm }) {
   const [words, setWords] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(1);
+  const [selectedWord, setSelectedWord] = useState(null);
+  const [showFullCard, setShowFullCard] = useState(false);
+  const observerTarget = useRef(null);
   const { toast } = useToast();
   const addWord = useWordStore((state) => state.addWord);
+  const savedWords = useWordStore((state) => state.words);
 
-  const fetchWords = async () => {
+  // Load words
+  useEffect(() => {
+    loadInitialWords();
+  }, []);
+
+  const loadInitialWords = async () => {
     setLoading(true);
     try {
-      const data = await browseWords(currentLetter);
+      const data = await browseWords("", 20);
       setWords(data);
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to load dictionary words",
+        description: "Failed to load dictionary",
         variant: "destructive",
       });
     } finally {
@@ -30,92 +39,75 @@ export default function DictionaryBrowser() {
     }
   };
 
-  useEffect(() => {
-    fetchWords();
-  }, [currentLetter]);
-
-  const handleLetterChange = (letter) => {
-    setCurrentLetter(letter.toLowerCase());
-    setPage(1);
+  const handleWordClick = (word) => {
+    if (selectedWord?.word === word.word) {
+      setShowFullCard(true);
+    } else {
+      setSelectedWord(word);
+      setShowFullCard(false);
+    }
   };
 
-  const handleAddWord = (word) => {
-    addWord({
-      word: word.word,
-      definition: word.definition,
-      partOfSpeech: word.partOfSpeech,
-    });
-    toast({
-      title: "Word added",
-      description: `"${word.word}" has been added to your word bank.`,
-    });
-  };
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="flex justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Browse Dictionary</CardTitle>
-        <div className="flex flex-wrap gap-2 mt-4">
-          {Array.from("ABCDEFGHIJKLMNOPQRSTUVWXYZ").map((letter) => (
-            <Button
-              key={letter}
-              variant={
-                currentLetter === letter.toLowerCase() ? "default" : "outline"
-              }
-              className="w-8 h-8 p-0"
-              onClick={() => handleLetterChange(letter)}
-            >
-              {letter}
-            </Button>
-          ))}
-        </div>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
+      <CardContent className="pt-6">
+        {showFullCard ? (
+          <WordCard
+            word={selectedWord}
+            onClose={() => {
+              setShowFullCard(false); // Hide WordCard
+              setSelectedWord(null);
+            }}
+            inDictionary={true}
+          />
         ) : (
-          <div className="space-y-4">
-            {words.map((word) => (
-              <div
-                key={word.word}
-                className="flex items-start justify-between border-b pb-2"
-              >
-                <div>
-                  <h3 className="font-medium">{word.word}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {word.definition}
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleAddWord(word)}
-                  title="Add to word bank"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-            <div className="flex justify-between mt-4">
-              <Button
-                variant="outline"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                <ChevronLeft className="h-4 w-4 mr-2" />
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setPage((p) => p + 1)}
-                disabled={words.length < 20}
-              >
-                Next
-                <ChevronRight className="h-4 w-4 ml-2" />
-              </Button>
-            </div>
+          <div className="max-h-[600px] overflow-y-auto space-y-2 pr-2">
+            <AnimatePresence>
+              {words.map((word) => {
+                const isSelected = selectedWord?.word === word.word;
+                const isSaved = savedWords.some(
+                  (saved) => saved.word === word.word
+                );
+
+                return (
+                  <motion.div
+                    key={word.word}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className={`
+                      p-4 rounded-lg transition-all select-none
+                      ${
+                        isSaved
+                          ? "opacity-50 cursor-not-allowed"
+                          : "cursor-pointer hover:bg-accent"
+                      }
+                      ${isSelected ? "bg-primary/5 shadow-sm" : ""}
+                    `}
+                    onClick={() => !isSaved && handleWordClick(word)}
+                  >
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium truncate">{word.word}</h3>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {word.definition}
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           </div>
         )}
       </CardContent>
