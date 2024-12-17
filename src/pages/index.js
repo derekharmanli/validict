@@ -1,4 +1,5 @@
 import Head from "next/head";
+import { useState } from "react";
 import {
   Tabs,
   TabsContent,
@@ -11,6 +12,15 @@ import DictionaryBrowser from "../components/dictionary-browser";
 import ConceptBrowser from "../components/concept-browser";
 
 export default function Home() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState("wordlist");
+
+  const handleTabChange = (value) => {
+    setActiveTab(value);
+    // Reset search when changing tabs
+    setSearchTerm("");
+  };
+
   return (
     <>
       <Head>
@@ -20,41 +30,39 @@ export default function Home() {
           content="Personal dictionary and word learning app"
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
       </Head>
 
       <main className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
-          <SearchHeader />
+          <SearchHeader
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            activeTab={activeTab}
+          />
 
-          <div className="grid gap-6 lg:grid-cols-12 mt-6">
-            {/* Main Word Bank */}
-            <div className="lg:col-span-8 space-y-6">
-              <WordList />
-            </div>
+          <Tabs
+            value={activeTab}
+            onValueChange={handleTabChange}
+            className="mt-6"
+          >
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="wordlist">Word List</TabsTrigger>
+              <TabsTrigger value="dictionary">Dictionary</TabsTrigger>
+              <TabsTrigger value="concepts">Concepts</TabsTrigger>
+            </TabsList>
 
-            {/* Sidebar Tools */}
-            <div className="lg:col-span-4 space-y-6">
-              <Tabs defaultValue="browse" className="w-full">
-                <TabsList className="w-full">
-                  <TabsTrigger value="browse" className="flex-1">
-                    Browse
-                  </TabsTrigger>
-                  <TabsTrigger value="concepts" className="flex-1">
-                    Concepts
-                  </TabsTrigger>
-                </TabsList>
+            <TabsContent value="wordlist">
+              <WordList searchTerm={searchTerm} />
+            </TabsContent>
 
-                <TabsContent value="browse">
-                  <DictionaryBrowser />
-                </TabsContent>
+            <TabsContent value="dictionary">
+              <DictionaryBrowser searchTerm={searchTerm} />
+            </TabsContent>
 
-                <TabsContent value="concepts">
-                  <ConceptBrowser />
-                </TabsContent>
-              </Tabs>
-            </div>
-          </div>
+            <TabsContent value="concepts">
+              <ConceptBrowser searchTerm={searchTerm} />
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
     </>

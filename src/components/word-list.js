@@ -1,30 +1,33 @@
+"use client";
+
 import { useWordStore } from "../lib/store";
 import WordCard from "./word-card";
 import { Card, CardContent } from "./ui/card";
 
-export default function WordList() {
+export default function WordList({ searchTerm }) {
   const words = useWordStore((state) => state.words);
-  const removeWord = useWordStore((state) => state.removeWord);
+
+  const filteredWords = words.filter(
+    (word) =>
+      !searchTerm ||
+      word.word.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      word.definition.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-semibold tracking-tight">My Words</h2>
-      {words.length === 0 ? (
+      {filteredWords.length === 0 ? (
         <Card>
-          <CardContent className="pt-6">
-            <p className="text-muted-foreground text-center">
-              Your word bank is empty. Search for words to add them here.
-            </p>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            {searchTerm
+              ? "No matching words found in your word bank"
+              : "Your word bank is empty. Add words from the dictionary!"}
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-4">
-          {words.map((word) => (
-            <WordCard
-              key={word.id}
-              word={word}
-              onRemove={() => removeWord(word.id)}
-            />
+          {filteredWords.map((word) => (
+            <WordCard key={word.id} word={word} />
           ))}
         </div>
       )}

@@ -1,181 +1,176 @@
 "use client";
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
+import { useState, useEffect } from "react";
+import { Card, CardContent } from "./ui/card";
+import { useWordStore } from "../lib/store";
+import { Loader2 } from "lucide-react";
 import { useToast } from "./ui/use-toast";
-import { useWordStore } from "@/lib/store";
-import { Plus, ExternalLink } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
-const POPULAR_CONCEPTS = [
-  { name: "Overton Window", category: "Politics" },
-  { name: "Hanlon's Razor", category: "Philosophy" },
-  { name: "Dunning-Kruger Effect", category: "Psychology" },
-  { name: "Streisand Effect", category: "Social" },
-  { name: "Occam's Razor", category: "Philosophy" },
-  { name: "Murphy's Law", category: "Culture" },
-  { name: "Peter Principle", category: "Business" },
-  { name: "Parkinson's Law", category: "Business" },
-];
-
-export default function ConceptBrowser() {
-  const [searchTerm, setSearchTerm] = useState("");
+export default function ConceptBrowser({ searchTerm }) {
+  const [concepts, setConcepts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [selectedConcept, setSelectedConcept] = useState(null);
   const { toast } = useToast();
   const addWord = useWordStore((state) => state.addWord);
+  const savedWords = useWordStore((state) => state.words);
 
-  const searchWikipedia = async (query) => {
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      // Show some popular concepts when no search term
+      setConcepts([
+        {
+          title: "Occam's Razor",
+          description: "The simplest explanation is usually the correct one",
+        },
+        {
+          title: "Dunning-Kruger Effect",
+          description:
+            "When people overestimate their ability due to limited knowledge",
+        },
+        {
+          title: "Overton Window",
+          description: "Range of ideas acceptable in public discourse",
+        },
+        // Add more default concepts here
+      ]);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      searchConcepts(searchTerm);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const searchConcepts = async (term) => {
+    setLoading(true);
     try {
-      // Search for the concept
       const searchUrl =
         `https://en.wikipedia.org/w/api.php?` +
         `action=query&` +
         `list=search&` +
-        `srsearch=${encodeURIComponent(query)}&` +
+        `srsearch=${encodeURIComponent(term)}&` +
         `format=json&` +
         `origin=*`;
 
-      const searchResponse = await fetch(searchUrl);
-      const searchData = await searchResponse.json();
-      const pageId = searchData.query.search[0]?.pageid;
+      const response = await fetch(searchUrl);
+      const data = await response.json();
+      setConcepts(data.query.search);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to search concepts",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      if (!pageId) {
-        throw new Error("Concept not found");
-      }
-
-      // Get the full content
-      const contentUrl =
-        `https://en.wikipedia.org/w/api.php?` +
-        `action=query&` +
-        `prop=extracts|categories&` +
-        `exintro=1&` +
-        `explaintext=1&` +
-        `pageids=${pageId}&` +
-        `format=json&` +
-        `origin=*`;
-
-      const contentResponse = await fetch(contentUrl);
-      const contentData = await contentResponse.json();
-      const page = contentData.query.pages[pageId];
-
-      return {
+  const handleConceptClick = async (concept) => {
+    if (selectedConcept?.pageid === concept.pageid) {
+      addWord({
+        word: concept.title,
+        definition: concept.snippet.replace(/<\/?[^>]+(>|$)/g, ""),
         type: "concept",
-        id: pageId.toString(),
-        word: page.title,
-        definition: page.extract,
         source: "Wikipedia",
-        url: `https://en.wikipedia.org/?curid=${pageId}`,
-        categories:
-          page.categories?.map((cat) => cat.title.replace("Category:", "")) ||
-          [],
-      };
-    } catch (error) {
-      console.error("Wikipedia API Error:", error);
-      throw error;
+        url: `https://en.wikipedia.org/?curid=${concept.pageid}`,
+      });
+      toast({
+        description: `"${concept.title}" has been added to your word bank`,
+      });
+      setSelectedConcept(null);
+    } else {
+      setSelectedConcept(concept);
     }
   };
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!searchTerm.trim()) return;
-
-    setLoading(true);
-    try {
-      const concept = await searchWikipedia(searchTerm);
-      addWord(concept);
-      toast({
-        title: "Concept added",
-        description: `"${concept.word}" has been added to your collection.`,
-      });
-      setSearchTerm("");
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Concept not found or error occurred.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+  const isConceptSaved = (concept) => {
+    return savedWords.some((saved) => saved.word === concept.title);
   };
 
-  const handleQuickAdd = async (conceptName) => {
-    setSearchTerm(conceptName);
-    try {
-      setLoading(true);
-      const concept = await searchWikipedia(conceptName);
-      addWord(concept);
-      toast({
-        title: "Concept added",
-        description: `"${concept.word}" has been added to your collection.`,
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to add concept.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!loading && concepts.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-muted-foreground">
+          {searchTerm
+            ? "No concepts found"
+            : "Search for concepts or browse popular ones"}
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Browse Concepts</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSearch} className="space-y-4">
-          <div className="flex gap-2">
-            <Input
-              placeholder="Search for a concept..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              disabled={loading}
-            />
-            <Button type="submit" disabled={loading}>
-              {loading ? "Searching..." : "Search"}
-            </Button>
-          </div>
-        </form>
+    <div className="space-y-2">
+      <AnimatePresence>
+        {concepts.map((concept) => {
+          const isSelected = selectedConcept?.pageid === concept.pageid;
+          const isSaved = isConceptSaved(concept);
 
-        <div className="mt-6">
-          <h3 className="text-sm font-medium mb-3">Popular Concepts:</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-            {POPULAR_CONCEPTS.map((concept) => (
-              <Button
-                key={concept.name}
-                variant="outline"
-                className="justify-start"
-                disabled={loading}
-                onClick={() => handleQuickAdd(concept.name)}
-              >
-                <span className="truncate">{concept.name}</span>
-              </Button>
-            ))}
-          </div>
-        </div>
+          return (
+            <motion.div
+              key={concept.pageid || concept.title}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className={`
+                p-4 rounded-lg transition-all
+                ${
+                  isSaved
+                    ? "opacity-50 cursor-not-allowed"
+                    : "cursor-pointer hover:bg-accent"
+                }
+                ${isSelected ? "bg-primary/5 shadow-sm" : ""}
+              `}
+              onClick={() => !isSaved && handleConceptClick(concept)}
+            >
+              <div className="flex justify-between items-start gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline gap-2">
+                    <h3 className="font-medium truncate">{concept.title}</h3>
+                  </div>
 
-        <div className="mt-6">
-          <h3 className="text-sm font-medium mb-2">Categories:</h3>
-          <div className="flex flex-wrap gap-2">
-            {Array.from(new Set(POPULAR_CONCEPTS.map((c) => c.category))).map(
-              (category) => (
-                <Button
-                  key={category}
-                  variant="secondary"
-                  size="sm"
-                  className="text-xs"
-                >
-                  {category}
-                </Button>
-              )
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+                  <AnimatePresence>
+                    {isSelected && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="mt-2 space-y-2"
+                      >
+                        <p className="text-sm text-muted-foreground">
+                          {concept.snippet?.replace(/<\/?[^>]+(>|$)/g, "") ||
+                            concept.description}
+                        </p>
+                        <p className="text-sm text-primary font-medium">
+                          Click again to add to your word bank
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {isSaved && (
+                  <span className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded">
+                    Saved
+                  </span>
+                )}
+              </div>
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
+    </div>
   );
 }
