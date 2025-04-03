@@ -17,10 +17,10 @@ import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 
 export default function Home() {
-  const [searchTerm, setSearchTerm] = useState(""); 
+  const [searchTerm, setSearchTerm] = useState("");
   const [activeView, setActiveView] = useState("list"); // "list", "search", "settings"
   const [browseMode, setBrowseMode] = useState("dictionary"); // "dictionary" or "concepts"
-  const [selectedLetter, setSelectedLetter] = useState(""); 
+  const [selectedLetter, setSelectedLetter] = useState("");
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
@@ -39,7 +39,8 @@ export default function Home() {
     border: "border-blue-200",
     iconActive: "text-blue-600",
     iconInactive: "text-gray-400",
-    gradientText: "bg-gradient-to-r from-blue-600 to-cyan-600 text-transparent bg-clip-text",
+    gradientText:
+      "bg-gradient-to-r from-blue-600 to-cyan-600 text-transparent bg-clip-text",
   };
 
   return (
@@ -85,9 +86,9 @@ export default function Home() {
                     resetFilters();
                   }}
                   className={`flex-1 py-3 font-medium flex items-center justify-center gap-2 transition-colors ${
-                    browseMode === "dictionary" 
+                    browseMode === "dictionary"
                       ? colors.primary
-                      : "bg-white hover:bg-purple-50"
+                      : "bg-white text-[#000] hover:bg-purple-50"
                   }`}
                 >
                   <Book className="h-5 w-5" />
@@ -99,9 +100,9 @@ export default function Home() {
                     resetFilters();
                   }}
                   className={`flex-1 py-3 font-medium flex items-center justify-center gap-2 transition-colors ${
-                    browseMode === "concepts" 
+                    browseMode === "concepts"
                       ? colors.primary
-                      : "bg-white hover:bg-purple-50"
+                      : "bg-white text-[#000] hover:bg-purple-50"
                   }`}
                 >
                   <Lightbulb className="h-5 w-5" />
@@ -117,9 +118,7 @@ export default function Home() {
                       key="all"
                       onClick={() => setSelectedLetter("")}
                       className={`w-9 h-9 flex items-center justify-center rounded-lg font-medium transition-all ${
-                        !selectedLetter 
-                          ? colors.primary
-                          : colors.accent
+                        !selectedLetter ? colors.primary : colors.accent
                       }`}
                     >
                       All
@@ -129,7 +128,7 @@ export default function Home() {
                         key={letter}
                         onClick={() => setSelectedLetter(letter)}
                         className={`w-8 h-8 flex items-center justify-center rounded-lg font-medium transition-all ${
-                          selectedLetter === letter 
+                          selectedLetter === letter
                             ? colors.primary
                             : colors.accent
                         }`}
@@ -144,15 +143,15 @@ export default function Home() {
               {/* Content Display */}
               <div className="mt-4">
                 {browseMode === "dictionary" ? (
-                  <DictionaryBrowser 
-                    searchTerm={searchTerm} 
-                    letterFilter={selectedLetter} 
+                  <DictionaryBrowser
+                    searchTerm={searchTerm}
+                    letterFilter={selectedLetter}
                     colors={colors}
                   />
                 ) : (
-                  <ConceptBrowser 
-                    searchTerm={searchTerm} 
-                    letterFilter={selectedLetter} 
+                  <ConceptBrowser
+                    searchTerm={searchTerm}
+                    letterFilter={selectedLetter}
                     colors={colors}
                   />
                 )}
@@ -170,7 +169,9 @@ export default function Home() {
                 <CardContent className="p-6 space-y-4">
                   <h2 className="text-xl font-semibold">Appearance</h2>
                   {/* Settings content would go here */}
-                  <p className="text-gray-500">Setting options will appear here in a future update.</p>
+                  <p className="text-gray-500">
+                    Setting options will appear here in a future update.
+                  </p>
                 </CardContent>
               </Card>
             </div>
@@ -192,7 +193,7 @@ export default function Home() {
               <ListIcon className="h-6 w-6" />
               <span className="text-xs mt-1">My Words</span>
             </button>
-            
+
             <button
               onClick={() => setActiveView("search")}
               className={`flex flex-col items-center py-3 px-5 relative ${
@@ -205,7 +206,7 @@ export default function Home() {
               <Search className="h-6 w-6" />
               <span className="text-xs mt-1">Search</span>
             </button>
-            
+
             <button
               onClick={() => setActiveView("settings")}
               className={`flex flex-col items-center py-3 px-5 relative ${

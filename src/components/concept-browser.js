@@ -214,7 +214,9 @@ export default function ConceptBrowser({ searchTerm, letterFilter }) {
                 onClick={() => !isSaved && setSelectedConcept(concept)}
               >
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-semibold text-lg">{concept.title}</h3>
+                  <h3 className="font-semibold text-[#000] text-lg">
+                    {concept.title}
+                  </h3>
                   {isSaved ? (
                     <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full">
                       Saved

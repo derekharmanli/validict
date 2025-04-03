@@ -98,7 +98,9 @@ export default function DictionaryBrowser({ searchTerm }) {
                   >
                     <div className="flex justify-between items-start gap-4">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-medium truncate">{word.word}</h3>
+                        <h3 className="font-medium text-[#000] truncate">
+                          {word.word}
+                        </h3>
                         <p className="text-sm text-muted-foreground truncate">
                           {word.definition}
                         </p>

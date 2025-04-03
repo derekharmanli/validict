@@ -21,12 +21,16 @@ export default function SearchHeader({
       {/* Header Title */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className={`text-3xl font-bold ${colors?.gradientText || "text-purple-600"}`}>
+          <h1
+            className={`text-3xl font-bold ${
+              colors?.gradientText || "text-purple-600"
+            }`}
+          >
             {activeTab === "dictionary" ? "Dictionary" : "Concepts"}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            {activeTab === "dictionary" 
-              ? "Discover new words and add them to your collection" 
+            {activeTab === "dictionary"
+              ? "Discover new words and add them to your collection"
               : "Explore important concepts and knowledge"}
           </p>
         </div>
@@ -36,15 +40,15 @@ export default function SearchHeader({
       </div>
 
       {/* Enhanced Search Input */}
-      <div className="relative bg-white rounded-xl py-3 px-4 shadow-md border border-purple-100 transition-all focus-within:shadow-lg focus-within:border-purple-300">
+      <div className="relative bg-[#a478c0] rounded-xl py-3 px-4 shadow-md border border-purple-100 transition-all focus-within:shadow-lg focus-within:border-purple-300">
         <div className="flex items-center">
-          <Search className="h-5 w-5 text-purple-400 mr-3" />
+          <Search className="h-5 w-5 text-[#000] font-semibold mr-3" />
           <Input
             type="search"
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={searchPlaceholders[activeTab]}
-            className="border-none shadow-none p-0 text-base focus-visible:ring-0 placeholder:text-gray-400 flex-1"
+            className="border-none shadow-none p-0 text-base bg-[#a478c0] focus-visible:ring-0 placeholder:text-[#000] flex-1"
           />
           {searchTerm && (
             <button
